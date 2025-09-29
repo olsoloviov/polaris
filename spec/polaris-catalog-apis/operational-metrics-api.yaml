@@ -1,0 +1,530 @@
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+
+---
+paths:
+
+  /api/operational-metrics/v1/{prefix}/definitions/tables:
+    parameters:
+      - $ref: '../iceberg-rest-catalog-open-api.yaml#/components/parameters/prefix'
+
+    get:
+      tags:
+        - Operational Metrics API
+      summary: Get the list of supported operational metrics for tables
+      operationId: getMetricDefinitions
+      description: |
+        Retrieve the list of supported operational metrics for tables.
+
+        Returns a JSON object containing the metric name, type and description for each supported metric that can be
+        computed, submitted by and served to external services.
+      responses:
+        200:
+          $ref: '#/components/responses/MetricDefinitionsResponse'
+        400:
+          $ref: '../iceberg-rest-catalog-open-api.yaml#/components/responses/BadRequestErrorResponse'
+        401:
+          $ref: '../iceberg-rest-catalog-open-api.yaml#/components/responses/UnauthorizedResponse'
+        403:
+          $ref: '../iceberg-rest-catalog-open-api.yaml#/components/responses/ForbiddenResponse'
+        503:
+          $ref: '../iceberg-rest-catalog-open-api.yaml#/components/responses/ServiceUnavailableResponse'
+        5XX:
+          $ref: '../iceberg-rest-catalog-open-api.yaml#/components/responses/ServerErrorResponse'
+
+  /api/operational-metrics/v1/{prefix}/namespaces/{namespace}/tables/{table}:
+    parameters:
+      - $ref: '../iceberg-rest-catalog-open-api.yaml#/components/parameters/prefix'
+      - $ref: '../iceberg-rest-catalog-open-api.yaml#/components/parameters/namespace'
+      - $ref: '../iceberg-rest-catalog-open-api.yaml#/components/parameters/table'
+
+    put:
+      tags:
+        - Operational Metrics API
+      summary: Submit new metric values for a specific table
+      operationId: submitMetrics
+      description: |
+        Submit new metric values for a specific table.
+
+        The request body contains a JSON object with metric values and metadata. The metadata for each
+        metric SHOULD contain the timestamp of the last table modification included in the metric computation.
+        It CAN also include other metadata, like the last Iceberg sequence number included in the metric computation.
+
+        Metadata is required but can be an empty object if no context information is available.
+
+        All submitted metrics must be supported (defined in the registry) and match the expected type.
+        Unsupported metric names or incorrect metric types will result in a 400 Bad Request response.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MetricSubmissionRequest'
+      responses:
+        204:
+          description: No Content - The metrics were successfully submitted
+        400:
+          description: Bad Request - Invalid metric data or unsupported metric names
+          content:
+            application/json:
+              schema:
+                $ref: '../iceberg-rest-catalog-open-api.yaml#/components/schemas/IcebergErrorResponse'
+              examples:
+                UnsupportedMetric:
+                  $ref: '#/components/examples/UnsupportedMetricError'
+                InvalidMetricType:
+                  $ref: '#/components/examples/InvalidMetricTypeError'
+        401:
+          $ref: '../iceberg-rest-catalog-open-api.yaml#/components/responses/UnauthorizedResponse'
+        403:
+          $ref: '../iceberg-rest-catalog-open-api.yaml#/components/responses/ForbiddenResponse'
+        404:
+          description: Not Found - The namespace or table specified does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '../iceberg-rest-catalog-open-api.yaml#/components/schemas/IcebergErrorResponse'
+              examples:
+                NamespaceNotFound:
+                  $ref: '../iceberg-rest-catalog-open-api.yaml#/components/examples/NoSuchNamespaceError'
+                TableNotFound:
+                  $ref: '../iceberg-rest-catalog-open-api.yaml#/components/examples/NoSuchTableError'
+        503:
+          $ref: '../iceberg-rest-catalog-open-api.yaml#/components/responses/ServiceUnavailableResponse'
+        5XX:
+          $ref: '../iceberg-rest-catalog-open-api.yaml#/components/responses/ServerErrorResponse'
+
+    get:
+      tags:
+        - Operational Metrics API
+      summary: Fetch all operational metrics associated with a given table
+      operationId: getAllMetrics
+      description: |
+        Fetch all the operational metrics associated with a given table.
+
+        Returns a JSON object containing the current value of all metrics for the table, where each metric name is
+        associated with its value(s) and metadata.
+      responses:
+        200:
+          $ref: '#/components/responses/MultipleMetricsResponse'
+        400:
+          $ref: '../iceberg-rest-catalog-open-api.yaml#/components/responses/BadRequestErrorResponse'
+        401:
+          $ref: '../iceberg-rest-catalog-open-api.yaml#/components/responses/UnauthorizedResponse'
+        403:
+          $ref: '../iceberg-rest-catalog-open-api.yaml#/components/responses/ForbiddenResponse'
+        404:
+          description: Not Found - The namespace, table, or metrics do not exist
+          content:
+            application/json:
+              schema:
+                $ref: '../iceberg-rest-catalog-open-api.yaml#/components/schemas/IcebergErrorResponse'
+              examples:
+                NamespaceNotFound:
+                  $ref: '../iceberg-rest-catalog-open-api.yaml#/components/examples/NoSuchNamespaceError'
+                TableNotFound:
+                  $ref: '../iceberg-rest-catalog-open-api.yaml#/components/examples/NoSuchTableError'
+                MetricsNotFound:
+                  $ref: '#/components/examples/NoMetricsFoundError'
+        503:
+          $ref: '../iceberg-rest-catalog-open-api.yaml#/components/responses/ServiceUnavailableResponse'
+        5XX:
+          $ref: '../iceberg-rest-catalog-open-api.yaml#/components/responses/ServerErrorResponse'
+
+  /api/operational-metrics/v1/{prefix}/namespaces/{namespace}/tables/{table}/metrics/{metric}:
+    parameters:
+      - $ref: '../iceberg-rest-catalog-open-api.yaml#/components/parameters/prefix'
+      - $ref: '../iceberg-rest-catalog-open-api.yaml#/components/parameters/namespace'
+      - $ref: '../iceberg-rest-catalog-open-api.yaml#/components/parameters/table'
+      - $ref: '#/components/parameters/metric'
+
+    get:
+      tags:
+        - Operational Metrics API
+      summary: Fetch the current value of a given operational metric associated with a given table
+      operationId: getSingleMetric
+      description: |
+        Fetch a given operational metric associated with a given table.
+
+        Returns a JSON object containing the metric value and metadata.
+      responses:
+        200:
+          $ref: '#/components/responses/SingleMetricResponse'
+        400:
+          $ref: '../iceberg-rest-catalog-open-api.yaml#/components/responses/BadRequestErrorResponse'
+        401:
+          $ref: '../iceberg-rest-catalog-open-api.yaml#/components/responses/UnauthorizedResponse'
+        403:
+          $ref: '../iceberg-rest-catalog-open-api.yaml#/components/responses/ForbiddenResponse'
+        404:
+          description: Not Found - The namespace, table, or metric does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '../iceberg-rest-catalog-open-api.yaml#/components/schemas/IcebergErrorResponse'
+              examples:
+                NamespaceNotFound:
+                  $ref: '../iceberg-rest-catalog-open-api.yaml#/components/examples/NoSuchNamespaceError'
+                TableNotFound:
+                  $ref: '../iceberg-rest-catalog-open-api.yaml#/components/examples/NoSuchTableError'
+                MetricNotFound:
+                  $ref: '#/components/examples/NoSuchMetricError'
+        503:
+          $ref: '../iceberg-rest-catalog-open-api.yaml#/components/responses/ServiceUnavailableResponse'
+        5XX:
+          $ref: '../iceberg-rest-catalog-open-api.yaml#/components/responses/ServerErrorResponse'
+
+components:
+  parameters:
+    metric:
+      name: metric
+      in: path
+      description: A metric name
+      required: true
+      schema:
+        type: string
+      example: "data-file-count"
+
+  responses:
+    MetricDefinitionsResponse:
+      description: List of supported metric definitions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MetricDefinitionsResponse'
+
+    SingleMetricResponse:
+      description: A single metric with its value and metadata
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/SingleMetricResponse'
+
+    MultipleMetricsResponse:
+      description: A list of metrics with their values and metadata
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MultipleMetricsResponse'
+
+  examples:
+    NoSuchMetricError:
+      summary: Metric not found
+      value:
+        error:
+          message: "Metric does not exist: data-file-count"
+          type: "NoSuchMetricException"
+          code: 404
+
+    NoMetricsFoundError:
+      summary: No metrics found for table
+      value:
+        error:
+          message: "No metrics found for table: my_table"
+          type: "NoMetricsException"
+          code: 404
+
+    UnsupportedMetricError:
+      summary: Unsupported metric name
+      value:
+        error:
+          message: "Unsupported metric: invalid-metric-name"
+          type: "UnsupportedMetricException"
+          code: 400
+
+    InvalidMetricTypeError:
+      summary: Invalid metric type
+      value:
+        error:
+          message: "Invalid metric type for 'data-file-count': expected 'point', got 'distribution'"
+          type: "InvalidMetricTypeException"
+          code: 400
+
+  schemas:
+    MetricDefinitionsResponse:
+      type: object
+      description: |
+        Response containing the list of supported operational metrics for tables.
+        This is a map where each property name is a metric name and each property value is a MetricDefinition object
+        containing the metric's type and description.
+      additionalProperties:
+        $ref: '#/components/schemas/MetricDefinition'
+      example:
+        data-file-count:
+          type: "point"
+          description: "Total number of data files in the table"
+        data-file-size-stats:
+          type: "distribution"
+          description: "Data file size distribution statistics"
+
+    MetricDefinition:
+      type: object
+      description: Definition of a supported operational metric
+      properties:
+        type:
+          type: string
+          enum: ["point", "distribution"]
+          description: The type of metric - point for simple values, distribution for statistical data
+        description:
+          type: string
+          description: Human-readable description of what this metric represents
+      required:
+        - type
+        - description
+      example:
+        type: "point"
+        description: "Total number of data files in the table"
+
+    MetricSubmissionRequest:
+      type: object
+      description: |
+        Request body for submitting metrics to a table. Contains a map of metric names to their values and metadata.
+        Metadata is required but can be an empty object.
+      additionalProperties:
+        $ref: '#/components/schemas/MetricValue'
+      example:
+        total-number-of-files:
+          metadata:
+            last-updated-timestamp: 1756827441
+            last-iceberg-sequence-number: 123
+          metric:
+            type: "point"
+            value: 14827
+        partition-sizes:
+          metadata:
+            last-updated-timestamp: 1756820479
+            last-iceberg-sequence-number: 42
+          metric:
+            type: "distribution"
+            value:
+              min: 1024
+              p10: 2048
+              p25: 4096
+              p50: 8192
+              p75: 16384
+              p90: 32768
+              p99: 65536
+              p999: 131072
+              p9999: 262144
+              max: 524288
+              average: 12345.67
+              standard-deviation: 8765.43
+              total: 67118765.43
+        data-file-count:
+          metadata: {}
+          metric:
+            type: "point"
+            value: 42
+
+    SingleMetricResponse:
+      type: object
+      description: Response containing a single metric with its value and metadata. Metadata is required but can be an empty object.
+      properties:
+        metadata:
+          $ref: '#/components/schemas/MetricMetadata'
+        metric:
+          oneOf:
+            - $ref: '#/components/schemas/PointMetric'
+            - $ref: '#/components/schemas/DistributionMetric'
+          discriminator:
+            propertyName: type
+      required:
+        - metadata
+        - metric
+      example:
+        metadata:
+          last-updated-timestamp: 1756827441
+          last-iceberg-sequence-number: 123
+        metric:
+          type: "point"
+          value: 14827
+
+    MultipleMetricsResponse:
+      type: object
+      description: |
+        Response containing multiple metrics for a table. Each metric name is mapped to its value and metadata.
+        Metadata is required but can be an empty object.
+      additionalProperties:
+        type: object
+        properties:
+          metadata:
+            $ref: '#/components/schemas/MetricMetadata'
+          metric:
+            oneOf:
+              - $ref: '#/components/schemas/PointMetric'
+              - $ref: '#/components/schemas/DistributionMetric'
+            discriminator:
+              propertyName: type
+        required:
+          - metadata
+          - metric
+      example:
+        total-number-of-files:
+          metadata:
+            last-updated-timestamp: 1756827441
+            last-iceberg-sequence-number: 123
+          metric:
+            type: "point"
+            value: 14827
+        partition-sizes:
+          metadata:
+            last-updated-timestamp: 1756820479
+            last-iceberg-sequence-number: 42
+          metric:
+            type: "distribution"
+            value:
+              min: 1024
+              p10: 2048
+              p25: 4096
+              p50: 8192
+              p75: 16384
+              p90: 32768
+              p99: 65536
+              p999: 131072
+              p9999: 262144
+              max: 524288
+              average: 12345.67
+              standard-deviation: 8765.43
+              total: 67118765.43
+
+    MetricValue:
+      type: object
+      description: A metric value with its metadata, used in submission requests
+      properties:
+        metadata:
+          $ref: '#/components/schemas/MetricMetadata'
+        metric:
+          oneOf:
+            - $ref: '#/components/schemas/PointMetric'
+            - $ref: '#/components/schemas/DistributionMetric'
+          discriminator:
+            propertyName: type
+      required:
+        - metadata
+        - metric
+
+    MetricMetadata:
+      type: object
+      description: |
+        Metadata associated with a metric value. Contains optional timestamp and sequence information
+        for tracking metric computation context. Can be an empty object if no context is available.
+      properties:
+        last-updated-timestamp:
+          type: integer
+          format: int64
+          description: Unix timestamp of the last modification included in the metric computation
+          example: 1756827441
+        last-iceberg-sequence-number:
+          type: integer
+          format: int64
+          description: Last Iceberg sequence number included in the metric computation
+          example: 123
+
+
+    PointMetric:
+      type: object
+      description: A simple point metric with a single numeric value
+      properties:
+        type:
+          type: string
+          enum: ["point"]
+          description: The type of metric
+        value:
+          type: number
+          description: The numeric value of the metric
+          example: 14827
+      required:
+        - type
+        - value
+
+    DistributionMetric:
+      type: object
+      description: A distribution metric containing percentile-based statistical data
+      properties:
+        type:
+          type: string
+          enum: ["distribution"]
+          description: The type of metric
+        value:
+          $ref: '#/components/schemas/DistributionValue'
+      required:
+        - type
+        - value
+
+    DistributionValue:
+      type: object
+      description: Statistical distribution data with percentiles and summary statistics
+      properties:
+        min:
+          type: number
+          description: Minimum value
+          example: 1024
+        p10:
+          type: number
+          description: 10th percentile
+          example: 2048
+        p25:
+          type: number
+          description: 25th percentile
+          example: 4096
+        p50:
+          type: number
+          description: 50th percentile (median)
+          example: 8192
+        p75:
+          type: number
+          description: 75th percentile
+          example: 16384
+        p90:
+          type: number
+          description: 90th percentile
+          example: 32768
+        p99:
+          type: number
+          description: 99th percentile
+          example: 65536
+        p999:
+          type: number
+          description: 99.9th percentile
+          example: 131072
+        p9999:
+          type: number
+          description: 99.99th percentile
+          example: 262144
+        max:
+          type: number
+          description: Maximum value
+          example: 524288
+        average:
+          type: number
+          description: Average (mean) value
+          example: 12345.67
+        standard-deviation:
+          type: number
+          description: Standard deviation
+          example: 8765.43
+        total:
+          type: number
+          description: Total sum of all values
+          example: 67118765.43
+      required:
+        - min
+        - p50
+        - max
+        - average

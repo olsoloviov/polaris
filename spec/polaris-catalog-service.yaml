@@ -159,6 +159,19 @@ paths:
   /polaris/v1/{prefix}/applicable-policies:
     $ref: './polaris-catalog-apis/policy-apis.yaml#/paths/~1polaris~1v1~1{prefix}~1applicable-policies'
 
+  #################################
+  # Polaris Operational Metrics API #
+  #################################
+
+  /api/operational-metrics/v1/{prefix}/definitions/tables:
+    $ref: './polaris-catalog-apis/operational-metrics-api.yaml#/paths/~1api~1operational-metrics~1v1~1{prefix}~1definitions~1tables'
+
+  /api/operational-metrics/v1/{prefix}/namespaces/{namespace}/tables/{table}:
+    $ref: './polaris-catalog-apis/operational-metrics-api.yaml#/paths/~1api~1operational-metrics~1v1~1{prefix}~1namespaces~1{namespace}~1tables~1{table}'
+
+  /api/operational-metrics/v1/{prefix}/namespaces/{namespace}/tables/{table}/metrics/{metric}:
+    $ref: './polaris-catalog-apis/operational-metrics-api.yaml#/paths/~1api~1operational-metrics~1v1~1{prefix}~1namespaces~1{namespace}~1tables~1{table}~1metrics~1{metric}'
+
 
 components:
   securitySchemes:
