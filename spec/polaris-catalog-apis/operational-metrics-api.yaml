@@ -162,7 +162,8 @@ paths:
       description: |
         Fetch a given operational metric associated with a given table.
 
-        Returns a JSON object containing the metric value and metadata.
+        Returns a JSON object containing the metric value and metadata wrapped in a 'metrics' array
+        to enable future support for historical data queries.
       responses:
         200:
           $ref: '#/components/responses/SingleMetricResponse'
@@ -261,22 +262,31 @@ components:
       type: object
       description: |
         Response containing the list of supported operational metrics for tables.
-        This is a map where each property name is a metric name and each property value is a MetricDefinition object
-        containing the metric's type and description.
-      additionalProperties:
-        $ref: '#/components/schemas/MetricDefinition'
+        All definitions are wrapped in a 'metric-definitions' field to enable future pagination support.
+      properties:
+        metric-definitions:
+          type: array
+          description: Array of metric definitions
+          items:
+            $ref: '#/components/schemas/MetricDefinition'
+      required:
+        - metric-definitions
       example:
-        data-file-count:
-          type: "point"
-          description: "Total number of data files in the table"
-        data-file-size-stats:
-          type: "distribution"
-          description: "Data file size distribution statistics"
+        metric-definitions:
+          - name: "data-file-count"
+            type: "point"
+            description: "Total number of data files in the table"
+          - name: "data-file-size-stats"
+            type: "distribution"
+            description: "Data file size distribution statistics"
 
     MetricDefinition:
       type: object
       description: Definition of a supported operational metric
       properties:
+        name:
+          type: string
+          description: The unique name of the metric
         type:
           type: string
           enum: ["point", "distribution"]
@@ -285,9 +295,11 @@ components:
           type: string
           description: Human-readable description of what this metric represents
       required:
+        - name
         - type
         - description
       example:
+        name: "data-file-count"
         type: "point"
         description: "Total number of data files in the table"
 
@@ -295,21 +307,15 @@ components:
       type: object
       description: |
         Request body for submitting metrics to a table. Contains a map of metric names to their values and metadata.
-        Metadata is required but can be an empty object.
+        The metadata for each metric SHOULD contain the timestamp of the last table modification included in the metric computation.
+        It CAN also include other metadata, like the last Iceberg sequence number included in the metric computation.
       additionalProperties:
         $ref: '#/components/schemas/MetricValue'
       example:
-        total-number-of-files:
-          metadata:
-            last-updated-timestamp: 1756827441
-            last-iceberg-sequence-number: 123
-          metric:
-            type: "point"
-            value: 14827
-        partition-sizes:
+        data-file-size-stats:
           metadata:
             last-updated-timestamp: 1756820479
-            last-iceberg-sequence-number: 42
+            last-sequence-number: 42
           metric:
             type: "distribution"
             value:
@@ -334,10 +340,83 @@ components:
 
     SingleMetricResponse:
       type: object
-      description: Response containing a single metric with its value and metadata. Metadata is required but can be an empty object.
+      description: |
+        Response containing a single metric with its value and metadata.
+        The metric is wrapped in a 'metrics' array to enable future support for historical data queries.
+      properties:
+        metrics:
+          type: array
+          description: Array containing the metric entry
+          items:
+            $ref: '#/components/schemas/MetricEntry'
+      required:
+        - metrics
+      example:
+        metrics:
+          - metadata:
+              name: "data-file-count"
+              last-updated-timestamp: 1756827441
+              last-sequence-number: 123
+            metric:
+              type: "point"
+              value: 14827
+
+    MultipleMetricsResponse:
+      type: object
+      description: |
+        Response containing multiple metrics for a table.
+        All metrics are wrapped in a 'metrics' array to enable future support for historical data queries.
+      properties:
+        metrics:
+          type: array
+          description: Array of metric entries
+          items:
+            $ref: '#/components/schemas/MetricEntry'
+      required:
+        - metrics
+      example:
+        metrics:
+          - metadata:
+              name: "data-file-count"
+              last-updated-timestamp: 1756827441
+            metric:
+              type: "point"
+              value: 14827
+          - metadata:
+              name: "data-file-size-stats"
+              last-updated-timestamp: 1756820479
+              last-sequence-number: 42
+            metric:
+              type: "distribution"
+              value:
+                min: 1024
+                p10: 2048
+                p25: 4096
+                p50: 8192
+                p75: 16384
+                p90: 32768
+                p99: 65536
+                p999: 131072
+                p9999: 262144
+                max: 524288
+                average: 12345.67
+                standard-deviation: 8765.43
+                total: 67118765.43
+
+    MetricValue:
+      type: object
+      description: A metric value with its metadata, used in submission requests
       properties:
         metadata:
-          $ref: '#/components/schemas/MetricMetadata'
+          type: object
+          description: |
+            Arbitrary metadata associated with the metric value.
+            SHOULD contain the timestamp of the last table modification included in the metric computation.
+            CAN also include other metadata, like the last Iceberg sequence number included in the metric computation.
+          additionalProperties: true
+          example:
+            last-updated-timestamp: 1756827441
+            last-sequence-number: 123
         metric:
           oneOf:
             - $ref: '#/components/schemas/PointMetric'
@@ -350,65 +429,32 @@ components:
       example:
         metadata:
           last-updated-timestamp: 1756827441
-          last-iceberg-sequence-number: 123
+          last-sequence-number: 123
         metric:
           type: "point"
           value: 14827
 
-    MultipleMetricsResponse:
+    MetricEntry:
       type: object
-      description: |
-        Response containing multiple metrics for a table. Each metric name is mapped to its value and metadata.
-        Metadata is required but can be an empty object.
-      additionalProperties:
-        type: object
-        properties:
-          metadata:
-            $ref: '#/components/schemas/MetricMetadata'
-          metric:
-            oneOf:
-              - $ref: '#/components/schemas/PointMetric'
-              - $ref: '#/components/schemas/DistributionMetric'
-            discriminator:
-              propertyName: type
-        required:
-          - metadata
-          - metric
-      example:
-        total-number-of-files:
-          metadata:
-            last-updated-timestamp: 1756827441
-            last-iceberg-sequence-number: 123
-          metric:
-            type: "point"
-            value: 14827
-        partition-sizes:
-          metadata:
-            last-updated-timestamp: 1756820479
-            last-iceberg-sequence-number: 42
-          metric:
-            type: "distribution"
-            value:
-              min: 1024
-              p10: 2048
-              p25: 4096
-              p50: 8192
-              p75: 16384
-              p90: 32768
-              p99: 65536
-              p999: 131072
-              p9999: 262144
-              max: 524288
-              average: 12345.67
-              standard-deviation: 8765.43
-              total: 67118765.43
-
-    MetricValue:
-      type: object
-      description: A metric value with its metadata, used in submission requests
+      description: A metric entry containing metadata and the metric value, used in response objects
       properties:
         metadata:
-          $ref: '#/components/schemas/MetricMetadata'
+          type: object
+          description: |
+            Metadata associated with the metric value.
+            Always includes the metric name, and may contain additional fields such as timestamp and sequence number.
+          properties:
+            name:
+              type: string
+              description: The name of the metric
+              example: "data-file-count"
+          required:
+            - name
+          additionalProperties: true
+          example:
+            name: "data-file-count"
+            last-updated-timestamp: 1756827441
+            last-sequence-number: 123
         metric:
           oneOf:
             - $ref: '#/components/schemas/PointMetric'
@@ -418,24 +464,6 @@ components:
       required:
         - metadata
         - metric
-
-    MetricMetadata:
-      type: object
-      description: |
-        Metadata associated with a metric value. Contains optional timestamp and sequence information
-        for tracking metric computation context. Can be an empty object if no context is available.
-      properties:
-        last-updated-timestamp:
-          type: integer
-          format: int64
-          description: Unix timestamp of the last modification included in the metric computation
-          example: 1756827441
-        last-iceberg-sequence-number:
-          type: integer
-          format: int64
-          description: Last Iceberg sequence number included in the metric computation
-          example: 123
-
 
     PointMetric:
       type: object
