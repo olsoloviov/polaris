@@ -48,7 +48,21 @@ val policyManagementModels =
     "ListPoliciesResponse",
   )
 
-val models = (genericTableModels + policyManagementModels).joinToString(",")
+val operationalMetricsModels =
+  listOf(
+    "MetricDefinitionsResponse",
+    "SingleMetricResponse",
+    "MultipleMetricsResponse",
+    "MetricEntry",
+    "MetricValue",
+    "PointMetric",
+    "DistributionMetric",
+    "DistributionValue",
+    "MetricDefinition",
+    "MetricSubmissionRequest",
+  )
+
+val models = (genericTableModels + policyManagementModels + operationalMetricsModels).joinToString(",")
 
 dependencies {
   implementation(project(":polaris-core"))
@@ -97,7 +111,7 @@ openApiGenerate {
   ignoreFileOverride.set(provider { rootDir.file(".openapi-generator-ignore").asFile.absolutePath })
   removeOperationIdPrefix.set(true)
   templateDir.set(provider { templatesDir.asFile.absolutePath })
-  globalProperties.put("apis", "GenericTableApi,PolicyApi")
+  globalProperties.put("apis", "GenericTableApi,PolicyApi,OperationalMetricsApi")
   globalProperties.put("models", models)
   globalProperties.put("apiDocs", "false")
   globalProperties.put("modelTests", "false")
