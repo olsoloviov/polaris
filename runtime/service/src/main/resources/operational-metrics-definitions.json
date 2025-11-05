@@ -1,0 +1,55 @@
+{
+  "metric-definitions": [
+    {
+      "name": "added-data-files",
+      "type": "point",
+      "description": "Number of data files added in the last snapshot"
+    },
+    {
+      "name": "added-records",
+      "type": "point",
+      "description": "Number of records added in the last snapshot"
+    },
+    {
+      "name": "added-files-size",
+      "type": "point",
+      "description": "Total size in bytes of files added in the last snapshot"
+    },
+    {
+      "name": "changed-partition-count",
+      "type": "point",
+      "description": "Number of partitions changed in the last snapshot"
+    },
+    {
+      "name": "total-records",
+      "type": "point",
+      "description": "Total number of records in the table"
+    },
+    {
+      "name": "total-files-size",
+      "type": "point",
+      "description": "Total size in bytes of all files in the table"
+    },
+    {
+      "name": "total-data-files",
+      "type": "point",
+      "description": "Total number of data files in the table"
+    },
+    {
+      "name": "total-delete-files",
+      "type": "point",
+      "description": "Total number of delete files in the table"
+    },
+    {
+      "name": "total-position-deletes",
+      "type": "point",
+      "description": "Total number of position delete records in the table"
+    },
+    {
+      "name": "total-equality-deletes",
+      "type": "point",
+      "description": "Total number of equality delete records in the table"
+    }
+  ]
+}
+

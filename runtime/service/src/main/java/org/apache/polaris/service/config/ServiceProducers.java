@@ -45,6 +45,7 @@ import org.apache.polaris.core.config.RealmConfig;
 import org.apache.polaris.core.context.CallContext;
 import org.apache.polaris.core.context.RealmContext;
 import org.apache.polaris.core.credentials.PolarisCredentialManager;
+import org.apache.polaris.core.metrics.operational.OperationalMetricsPersistenceFactory;
 import org.apache.polaris.core.persistence.BasePersistence;
 import org.apache.polaris.core.persistence.MetaStoreManagerFactory;
 import org.apache.polaris.core.persistence.PolarisMetaStoreManager;
@@ -75,6 +76,7 @@ import org.apache.polaris.service.context.RealmContextResolver;
 import org.apache.polaris.service.credentials.PolarisCredentialManagerConfiguration;
 import org.apache.polaris.service.events.PolarisEventListenerConfiguration;
 import org.apache.polaris.service.events.listeners.PolarisEventListener;
+import org.apache.polaris.service.metrics.operational.OperationalMetricsPersistenceConfiguration;
 import org.apache.polaris.service.persistence.PersistenceConfiguration;
 import org.apache.polaris.service.ratelimiter.RateLimiter;
 import org.apache.polaris.service.ratelimiter.RateLimiterFilterConfiguration;
@@ -232,6 +234,16 @@ public class ServiceProducers {
       SecretsManagerConfiguration config,
       @Any Instance<UserSecretsManagerFactory> userSecretsManagerFactories) {
     return userSecretsManagerFactories.select(Identifier.Literal.of(config.type())).get();
+  }
+
+  @Produces
+  @ApplicationScoped
+  public OperationalMetricsPersistenceFactory operationalMetricsPersistenceFactory(
+      OperationalMetricsPersistenceConfiguration config,
+      @Any Instance<OperationalMetricsPersistenceFactory> operationalMetricsPersistenceFactories) {
+    return operationalMetricsPersistenceFactories
+        .select(Identifier.Literal.of(config.type()))
+        .get();
   }
 
   @Produces

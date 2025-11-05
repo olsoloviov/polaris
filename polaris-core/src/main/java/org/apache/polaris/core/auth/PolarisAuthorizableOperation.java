@@ -44,6 +44,8 @@ import static org.apache.polaris.core.entity.PolarisPrivilege.NAMESPACE_LIST_GRA
 import static org.apache.polaris.core.entity.PolarisPrivilege.NAMESPACE_MANAGE_GRANTS_ON_SECURABLE;
 import static org.apache.polaris.core.entity.PolarisPrivilege.NAMESPACE_READ_PROPERTIES;
 import static org.apache.polaris.core.entity.PolarisPrivilege.NAMESPACE_WRITE_PROPERTIES;
+import static org.apache.polaris.core.entity.PolarisPrivilege.OPERATIONAL_METRICS_READ;
+import static org.apache.polaris.core.entity.PolarisPrivilege.OPERATIONAL_METRICS_WRITE;
 import static org.apache.polaris.core.entity.PolarisPrivilege.POLICY_ATTACH;
 import static org.apache.polaris.core.entity.PolarisPrivilege.POLICY_CREATE;
 import static org.apache.polaris.core.entity.PolarisPrivilege.POLICY_DETACH;
@@ -246,7 +248,11 @@ public enum PolarisAuthorizableOperation {
   REMOVE_TABLE_PROPERTIES(TABLE_REMOVE_PROPERTIES),
   SET_TABLE_STATISTICS(TABLE_SET_STATISTICS),
   REMOVE_TABLE_STATISTICS(TABLE_REMOVE_STATISTICS),
-  REMOVE_TABLE_PARTITION_SPECS(TABLE_REMOVE_PARTITION_SPECS);
+  REMOVE_TABLE_PARTITION_SPECS(TABLE_REMOVE_PARTITION_SPECS),
+  GET_METRIC_DEFINITIONS(EnumSet.noneOf(PolarisPrivilege.class)),
+  SUBMIT_METRICS(OPERATIONAL_METRICS_WRITE),
+  GET_ALL_METRICS(OPERATIONAL_METRICS_READ),
+  GET_SINGLE_METRIC(OPERATIONAL_METRICS_READ);
 
   private final EnumSet<PolarisPrivilege> privilegesOnTarget;
   private final EnumSet<PolarisPrivilege> privilegesOnSecondary;

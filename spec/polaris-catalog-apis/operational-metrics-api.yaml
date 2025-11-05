@@ -408,21 +408,9 @@ components:
       description: A metric value with its metadata, used in submission requests
       properties:
         metadata:
-          type: object
-          description: |
-            Arbitrary metadata associated with the metric value.
-            SHOULD contain the timestamp of the last table modification included in the metric computation.
-            CAN also include other metadata, like the last Iceberg sequence number included in the metric computation.
-          additionalProperties: true
-          example:
-            last-updated-timestamp: 1756827441
-            last-sequence-number: 123
+          $ref: "#/components/schemas/MetricValueMetadata"
         metric:
-          oneOf:
-            - $ref: '#/components/schemas/PointMetric'
-            - $ref: '#/components/schemas/DistributionMetric'
-          discriminator:
-            propertyName: type
+          $ref: "#/components/schemas/Metric"
       required:
         - metadata
         - metric
@@ -434,66 +422,85 @@ components:
           type: "point"
           value: 14827
 
+    MetricValueMetadata:
+      type: object
+      description: |
+        Arbitrary metadata associated with the metric value.
+        SHOULD contain the timestamp of the last table modification included in the metric computation.
+        CAN also include other metadata, like the last Iceberg sequence number included in the metric computation.
+      additionalProperties: true
+      example:
+        last-updated-timestamp: 1756827441
+        last-sequence-number: 123
+
     MetricEntry:
       type: object
       description: A metric entry containing metadata and the metric value, used in response objects
       properties:
         metadata:
-          type: object
-          description: |
-            Metadata associated with the metric value.
-            Always includes the metric name, and may contain additional fields such as timestamp and sequence number.
-          properties:
-            name:
-              type: string
-              description: The name of the metric
-              example: "data-file-count"
-          required:
-            - name
-          additionalProperties: true
-          example:
-            name: "data-file-count"
-            last-updated-timestamp: 1756827441
-            last-sequence-number: 123
+          $ref: "#/components/schemas/MetricEntryMetadata"
         metric:
-          oneOf:
-            - $ref: '#/components/schemas/PointMetric'
-            - $ref: '#/components/schemas/DistributionMetric'
-          discriminator:
-            propertyName: type
+          $ref: "#/components/schemas/Metric"
       required:
         - metadata
         - metric
 
-    PointMetric:
+    MetricEntryMetadata:
       type: object
-      description: A simple point metric with a single numeric value
+      description: |
+        Metadata associated with the metric value.
+        Always includes the metric name, and may contain additional fields such as timestamp and sequence number.
+      properties:
+        name:
+          type: string
+          description: The name of the metric
+          example: "data-file-count"
+      required:
+        - name
+      additionalProperties: true
+      example:
+        name: "data-file-count"
+        last-updated-timestamp: 1756827441
+        last-sequence-number: 123
+
+    Metric:
+      type: object
+      description: Base type for all metrics
+      discriminator:
+        propertyName: type
+        mapping:
+          point: '#/components/schemas/PointMetric'
+          distribution: '#/components/schemas/DistributionMetric'
       properties:
         type:
           type: string
-          enum: ["point"]
           description: The type of metric
-        value:
-          type: number
-          description: The numeric value of the metric
-          example: 14827
       required:
         - type
-        - value
+
+    PointMetric:
+      allOf:
+        - $ref: '#/components/schemas/Metric'
+        - type: object
+          description: A simple point metric with a single numeric value
+          properties:
+            value:
+              type: number
+              description: The numeric value of the metric
+              example: 14827
+          required:
+            - value
 
     DistributionMetric:
-      type: object
-      description: A distribution metric containing percentile-based statistical data
-      properties:
-        type:
-          type: string
-          enum: ["distribution"]
-          description: The type of metric
-        value:
-          $ref: '#/components/schemas/DistributionValue'
-      required:
-        - type
-        - value
+      allOf:
+        - $ref: '#/components/schemas/Metric'
+        - type: object
+          description: A distribution metric containing percentile-based statistical data
+          properties:
+            value:
+              $ref: '#/components/schemas/DistributionValue'
+          required:
+            - value
 
     DistributionValue:
       type: object
